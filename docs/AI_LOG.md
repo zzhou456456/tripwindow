@@ -1,27 +1,80 @@
 # AI / Virtual Teammate Log
 
-The assignment requires documenting any work substantively done with AI assistance.
-Tool: Claude Code (model: Claude Opus 5), used from the Claude desktop app.
+The assignment allows virtual teammates as long as I'm transparent about how I directed them and
+what I learned, and requires listing any work substantively done with AI. This file is that record.
 
-| When (2026-09-14) | What I asked for | What the AI did | What I checked / changed | What I learned |
+- **Tool:** Claude Code (model: Claude Opus 5), in the Claude desktop app, on 2026-09-14.
+- **Sessions:** one Claude Code session built and deployed TripWindow (everything in this repo). A
+  **separate** Claude Code session worked in my partner's repo; that part is summarized from its notes.
+- **Markers:** every AI-assisted commit ends with `Co-Authored-By: Claude Opus 5`. The GitHub issues
+  in this repo were created by the AI through the `gh` CLI under my account, after I approved them.
+
+## Who did what
+
+| The AI did | I did |
+|---|---|
+| Acted as a tutor when I got stuck on something technical. It explained how Expo Go runs an app on a real iPhone without Xcode, how JWT login and environment variables work, what a detached HEAD and `git stash` are, and why Expo Go needed a sign-in | **Understood the assignment requirements and made the plan**: platform (iPhone), stack (Expo + Express), host (Render), a travel app that continues my Interview Assignment, and separate repos with my partner. Also decided the order of work and what counted as done for each requirement |
+| Implemented the plan in code: the Express API, the three app screens, `render.yaml`, and the README. It proposed the feature list and I approved it | Approved each commit, push, and anything published to GitHub |
+| Ran the terminal work: installs, `create-expo-app`, git commits, creating the GitHub repo and issues | Created and signed in to my Expo account (CLI + Expo Go) and connected GitHub to Render |
+| Tested the API with `curl` (locally and in production) and the app in a web preview | Deployed the Render Blueprint (database + web service) from the dashboard |
+| Diagnosed errors I ran into and told me how to fix them | Ran the original sample and TripWindow on my real iPhone, tested every feature by hand, took all screenshots |
+
+## Timeline
+
+| # | Step | Who | What happened | How it was verified |
 |---|---|---|---|---|
-| Kickoff | Read the assignment PDF + resources page and plan with me | Summarized the 5 required items, flagged "real device not emulator" and "partner must be a real person"; checked my Mac (no Xcode, no Java, Node 25 + gh present) and recommended Expo Go to reach a real iPhone without Xcode | Chose iPhone + Expo + Express/Render, travel theme continuing my Interview Assignment | Expo Go sidesteps the Xcode/signing setup for a first on-device build |
-| Scaffold | Create project skeleton | Ran `create-expo-app` (default template = the "existing sample app"); wrote Express server with JWT auth, trips CRUD, public feed, Open-Meteo weather proxy, analytics events; Postgres on Render with in-memory fallback locally; `render.yaml` | Smoke-tested every endpoint with curl before any app code | Test-first on the API means app bugs and server bugs don't get mixed up |
-| Debug: parallel commands | Two shell commands ran concurrently; one `cd server` changed the shared working directory so the other's `cd app` failed and `npm install` ran in the wrong folder | Re-ran with absolute paths | Shell state (cwd) is shared across the agent's commands — use absolute paths |
-| Debug: data leak | AI noticed the in-memory `/feed` returned `user_id` and coordinates, while the Postgres query didn't | Fixed memory store to return the same columns | Two storage backends must return the same shape, or local testing hides/creates bugs |
-| Debug: first commit failed | `git commit` stopped: no `user.name`/`user.email` configured on this Mac | Set a repo-local identity with the GitHub noreply email (keeps personal email out of public history) | GitHub links commits to an account by email; noreply address does this privately |
-| GitHub | Create public repo and push | `gh repo create tripwindow --public --push` | Partner has no invite; they fork + PR since the repo is public | Fork + PR is enough for cross-person contribution on a public repo |
-| Issues | Track requirements, features, bugs in GitHub | Created `required`/`exceptional` labels and 14 issues via `gh`; closed finished ones with comments | Approved before publishing | Issues double as the bug diary the report needs |
-| App screens | Turn the sample into TripWindow | Wrote Trips (form, location, weather, delete), Feed, Account (login/register, analytics), API client, auth context with SecureStore; 3 native tabs with SF Symbols | Tested on my iPhone via Expo Go against the local API: registered (analytics counted app_open/register/feed_viewed), "Use my location" filled "Atlanta, United States", saved a public trip with ±10 flexible days, tapped it and got the Open-Meteo 7-day forecast. Flexible days and public flag persisted on device, so the web-test loss was the automation, not the app | Placeholder text (e.g. `2026-12-20`) looks almost like a filled value in dark mode — easy to misread as prefilled |
-| Debug: docs 404 | AI tried to read the NativeTabs page for SDK 57 and got HTTP 404 | Read the type definitions in `node_modules/expo-router/build/native-tabs/types.d.ts` instead; found `sf` icon prop | When docs move, the installed package's `.d.ts` files are the ground truth for that exact version |
-| Debug: date shift (found by reading code, before it bit) | AI flagged that node-pg parses Postgres `DATE` into a local-midnight JS `Date`, so `2026-12-20` serializes with a UTC offset and can display as Dec 19 | Added `types.setTypeParser(1082, v => v)`; app parses dates at local noon | Date-only values should stay strings end-to-end (issue #14) |
-| Debug: double safe-area | Types doc says iOS NativeTabs auto-insets the first ScrollView; my Screen also pads for the notch | Set `contentInsetAdjustmentBehavior="never"` | Read platform defaults before adding manual layout fixes |
-| Web smoke test | Check the app before I try it on the phone | Ran API + `expo start --web` in the Claude desktop browser pane at iPhone size (375×812); registered, saw analytics counts, created a trip | Dates showed correctly (Dec 20 – Dec 28); forecast unavailable on web because `geocodeAsync` is native-only | Web is a quick smoke test, not a substitute for the device |
-| Debug: blank first screenshot | First screenshot showed only the web tab bar | Page text showed content existed — just captured before first render; also the floating web tab bar covered the title → added web-only top padding | Read the DOM text before assuming a render bug |
-| Debug: "Platform is not defined" | Console error in `Screen` after an edit | Two edits to `form.tsx` landed separately; Fast Refresh ran the padding change before the import was added. Import confirmed present | Hot reload can surface transient errors between multi-part edits |
-| Debug: clicks missed | Automated register click hit nothing (server log showed no request); later typed flexible days/note/public toggle didn't persist | Server logs + network panel proved the request never left; clicking by element ref fixed submit. Field persistence to re-check by hand on iPhone | Server logs are the ground truth for "did the app actually call the API?" |
-| Partner repo (Req 4) | After my partner added me to `stevenyxng/cs8803-first-assignment`, set it up and make a small change | Cloned it, installed JDK 21 (`brew install openjdk@21`) for the Firebase emulators, ran `npm run build` + `npm test` (11 storage.rules tests pass). Found that the README says `.env.local` defaults are committed, but `.env.local` is gitignored, so a fresh clone has empty Firebase config; created a local emulator-only `.env.local`. On branch `feature/file-search`, added a search-by-name filter with an "N of M files" count and a "No files match" state. Signed in a fake user through the auth emulator and uploaded test files to check it at desktop and 375px widths | _fill in: review the diff, test on my iPhone, open the PR_ | _fill in_ |
-| Debug: Expo Go "must be signed in" | Scanning the QR code showed "You need to be signed in to Expo Go and Expo CLI" (`docs/screenshots/debug-01-expo-go-login-required.png`) | Created an Expo account myself, ran `npx expo login`, signed in to Expo Go with the same account; the project then appeared under Development servers and the sample opened on my iPhone | Current Expo Go requires the same account on phone and CLI for LAN projects |
-| Debug: `git checkout main` refused | While on the sample commit `4eb8e8c` to screenshot it, `docs/AI_LOG.md` had an uncommitted row (partner-repo notes) | Stashed the file, checked out `main`, merged the row back in by hand | Uncommitted edits block switching commits; stash instead of discarding |
-| Debug: EADDRINUSE :3000 | Starting the API in my terminal failed: port 3000 already in use | The AI's own browser-preview API server was still running; stopped it, port freed | `lsof -iTCP:3000 -sTCP:LISTEN` shows who holds a port |
-| Render deploy (Req 5) | Deploy the API with a database | I connected GitHub (Render got access to only `tripwindow`), created a Blueprint from `render.yaml`: free Postgres `tripwindow-db` + web service `tripwindow-api`. Log: `TripWindow API on :10000 (storage: postgres)`, live at https://tripwindow-api.onrender.com. AI then ran a curl smoke test against production: health, register, 401 without token, create + list trip, weather, feed, stats all OK | Dates came back as `"2026-12-20"` strings from real Postgres, confirming the DATE parser fix (#14) | Render sets `PORT=10000`, so reading `process.env.PORT` mattered; free instances sleep after inactivity (~50 s cold start); the logs show Render's health check hitting `/health` every 5 s |
+| 1 | Plan | Me | I read the assignment and the resources page and planned how to cover the 5 required items plus several exceptional features: run on my iPhone through Expo Go, build with Expo + Express, deploy on Render with Postgres, make a travel app that continues my Interview Assignment, and have my partner and me contribute to each other's repos. | — |
+| 2 | Scaffold | AI | Generated the Expo default template (the "existing sample app"). Wrote the Express API: JWT auth, trips CRUD, public feed, Open-Meteo weather proxy, analytics events, with Postgres on Render and in-memory storage locally. Also `render.yaml`. | AI ran every endpoint with `curl` against a local server |
+| 3 | Git + GitHub | AI, approved by me | Committed the untouched sample + API as the first commit (`4eb8e8c`), created the public repo with `gh`, pushed. I chose the GitHub noreply address as the commit email. | Repo visible on GitHub |
+| 4 | Task tracking | AI, approved by me | Created `required` / `exceptional` labels and 14 issues (requirements, features, bugs) with `gh`; closed finished ones with comments. | Issues list on GitHub |
+| 5 | App screens | AI | Replaced the sample screens with TripWindow: Trips (date-window form, "Use my location", weather per trip, long-press delete, public toggle), Feed, Account (register/login, JWT in SecureStore, usage stats); three native tabs. Commit `8a76be6`. | AI typechecked it and tested register + create-trip in a browser preview at iPhone size |
+| 6 | Sample on device (Req 2) | Me | Checked out `4eb8e8c`, ran `npx expo start`, opened the sample in Expo Go on my iPhone, tapped through Explore. | Screenshots 01–03 |
+| 7 | TripWindow on device | Me | Registered, used location (filled "Atlanta, United States"), saved a public trip with ±10 flexible days, opened the forecast, saw it in Feed. | Screenshots 05–10 |
+| 8 | Deploy (Req 5) | Me (dashboard) + AI (config, testing) | I connected GitHub (Render can access only `tripwindow`) and deployed the Blueprint: free Postgres `tripwindow-db` + web service `tripwindow-api`. The log showed `storage: postgres`, live at https://tripwindow-api.onrender.com. The AI then tested production with `curl` and pointed the app and README at the new URL (commit `6e24a3f`). | Render logs screenshot; AI's production `curl` run: health, register, 401 without token, create/list trip, weather, feed, stats |
+| 9 | Partner repo (Req 4) | Separate AI session + me | In `stevenyxng/cs8803-first-assignment`, another Claude Code session (per its notes) installed JDK 21 for the Firebase emulators, ran `npm run build` and `npm test` (11 rules tests pass), and added a search-by-name filter to the file list on branch `feature/file-search`, tested in the emulators at desktop and 375px widths. I reviewed the diff with this session. The PR is not opened yet. | Build + tests (per that session); diff reviewed by me |
+
+## Problems and how they were solved
+
+| Problem | Who hit it | Cause | Fix (who) |
+|---|---|---|---|
+| In-memory `/feed` returned `user_id` and coordinates | AI, while reviewing its own code | The memory store returned whole rows; the Postgres query selected only public columns | AI made both return the same fields (issue #12) |
+| Dates could show a day early | AI, while reading the code before it caused a bug | `node-pg` turns a Postgres `DATE` into a JS Date at local midnight, which shifts when serialized | AI kept dates as `YYYY-MM-DD` strings (issue #14); later confirmed against the real Render database |
+| First `git commit` failed | AI | No git name/email set on my Mac | I chose the GitHub noreply identity; AI set it for this repo only (issue #13) |
+| Expo Router docs page returned 404 | AI | Docs URL moved for SDK 57 | AI read the installed package's type definitions instead |
+| App content hidden under the web tab bar; `Platform is not defined` in the console | AI, in the browser preview | Floating web tab bar; one of the AI's edits hot-reloaded before its matching import was added | AI added web-only padding; the import landed in the next edit |
+| In the browser preview, a click didn't submit and some typed fields didn't save | AI's browser automation | The automated clicks missed after the page re-rendered (the server log showed no request) | Clicking by element reference fixed it; my iPhone test showed the fields do save, so the app was fine |
+| Expo Go: "You need to be signed in to Expo Go and Expo CLI" | Me | Current Expo Go needs the same Expo account on the phone and the computer | I made an Expo account, ran `npx expo login`, and signed in on the phone (AI explained the error) |
+| `git checkout main` refused | Me | An uncommitted line in this log (from the partner-repo session) would have been overwritten | AI stashed the change, switched to `main`, and merged the line back in |
+| `EADDRINUSE :3000` when starting the API | Me | The AI's own preview server was still running on port 3000 | AI stopped it |
+| Date placeholder looks like a filled-in value in dark mode | Me (spotted in a screenshot review) | Placeholder color is close to the text color | Not fixed yet |
+| Partner-repo commit author was my Mac's local hostname email | AI, before pushing | That repo had no git identity set | I approved switching to the noreply identity; AI amended the unpushed commit |
+| AI's first PR draft suggested "add a `.env.example`" | AI's mistake | It hadn't checked; that file already existed | AI read the partner repo and corrected the note: the README says `.env.local` is committed, but it's gitignored |
+| This log's first draft credited me with things the AI did (e.g. the `curl` tests and code fixes) | Me, when I asked whether AI use was documented clearly | The table's "what I checked" column mixed my actions with the AI's | Rewritten with a "Who" column and this division-of-work summary |
+
+## What I learned
+
+Most of what I'd built before was front-end, so the biggest gain was a small but real first experience
+of how a back end is put together and shipped:
+
+- **How the app and server talk.** The phone never touches the database; it calls REST endpoints
+  (`POST /auth/login`, `GET /trips`, …) and gets JSON back. Watching the server log while I tapped
+  buttons on my iPhone made it clear which action triggered which request.
+- **Authentication in practice.** Passwords are hashed on the server, login returns a token (JWT), and
+  the app sends it with every request. `/trips` without a token is refused with 401, which is how one
+  user's trips stay private.
+- **Local vs. deployed.** Locally the server kept data in memory and vanished on restart; on Render it
+  uses a real Postgres database. I had to point the app at a different URL (my Mac's LAN IP versus the
+  Render URL). On the free tier the service sleeps and the first request can take ~50 seconds.
+- **Configuration lives outside the code.** The port, database URL, and secret come from environment
+  variables that Render fills in from `render.yaml`, which is why the same code runs on my Mac and on Render.
+- **Debugging across layers.** When something failed I learned to check which layer it was: the app,
+  the network (phone and Mac on the same Wi-Fi), the server log, or an account step like the Expo sign-in.
+- **Git beyond commit and push.** Checking out an old commit to screenshot the original sample, then
+  getting stuck on `git checkout main` because of an uncommitted change, showed me what a detached HEAD
+  and `git stash` are for.
+
+On working with AI: it was fast at writing code, but I still had to plan, make the decisions, set up
+accounts, test on the real device, and check what it wrote about my work. Its first draft of this log
+gave me credit for things it had done, and I caught that.
+
+_(I gave the main point, more back-end experience coming from a front-end background; the AI drafted the wording from what we actually did, and I reviewed it.)_

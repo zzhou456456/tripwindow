@@ -78,6 +78,18 @@ free Postgres database and generates `JWT_SECRET`. Health check: `GET /health`.
 | POST | `/events` | optional | `{name, props}` |
 | GET | `/events/stats` | – | counts per event name |
 
+## AI assistance
+
+This project was built with Claude Code (Claude Opus 5) as a virtual teammate, which the assignment
+allows as long as it's documented.
+- **The AI** wrote the code in this repo (API, app screens, deploy config, README) and ran the setup,
+  git, and `curl` testing. The GitHub issues were also created by the AI through the `gh` CLI.
+- **I** chose what to build and which tools to use, set up the Expo/Render/GitHub accounts, deployed
+  on Render, ran and tested the app on my iPhone, and approved every commit and publish.
+- AI-assisted commits end with `Co-Authored-By: Claude Opus 5`.
+
+Full step-by-step record, including what went wrong: [`docs/AI_LOG.md`](docs/AI_LOG.md).
+
 ## Contributing (partner workflow)
 
 1. Fork this repo, clone your fork.
