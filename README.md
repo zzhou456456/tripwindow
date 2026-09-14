@@ -7,7 +7,7 @@ you save trips as a *date window with flexibility*, see the weather at the desti
 trips publicly with other users.
 
 **Repo:** https://github.com/zzhou456456/tripwindow
-**API:** _Render URL goes here after deploy_
+**API:** https://tripwindow-api.onrender.com (free Render instance — the first request after ~15 min idle takes up to a minute while it wakes up)
 
 ## Architecture
 

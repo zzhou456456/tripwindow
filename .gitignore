@@ -3,3 +3,5 @@ node_modules/
 .env.local
 .DS_Store
 *.log
+# Screenshots go in the PDF report, not the public repo
+docs/screenshots/
