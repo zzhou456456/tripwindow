@@ -1,6 +1,10 @@
 // Storage layer. Uses Postgres when DATABASE_URL is set (Render), otherwise an
 // in-memory store so the server runs locally with zero setup.
-const { Pool } = require('pg');
+const { Pool, types } = require('pg');
+
+// Keep DATE columns as 'YYYY-MM-DD' strings; the default parser builds a local-midnight
+// JS Date, which serializes with a timezone offset and can show up as the previous day.
+types.setTypeParser(1082, (v) => v);
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS users (
