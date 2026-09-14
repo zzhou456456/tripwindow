@@ -1,0 +1,21 @@
+{
+  "name": "tripwindow-server",
+  "version": "1.0.0",
+  "description": "REST API for TripWindow: auth, trips, shared feed, weather proxy, analytics events",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.13.1"
+  }
+}
