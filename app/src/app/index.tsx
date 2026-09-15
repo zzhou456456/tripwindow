@@ -2,17 +2,23 @@ import * as Location from 'expo-location';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Switch, View } from 'react-native';
 
-import { Button, Card, Danger, Field, Screen } from '@/components/form';
+import { Button, Card, Danger, DateField, Field, Screen } from '@/components/form';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { api, track, type Trip, type WeatherDay } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
-import { formatWeekday, formatWindow } from '@/lib/format';
+import { addDays, formatWeekday, formatWindow, toISODate } from '@/lib/format';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+// Dates left unpicked default to a trip starting today and lasting this many days.
+const DEFAULT_TRIP_DAYS = 7;
+// Cleared while the field is focused so typing doesn't need a delete first; restored if left blank.
+const DEFAULT_FLEX_DAYS = '0';
 
 export default function TripsScreen() {
   const { session, ready } = useAuth();
+  const theme = useTheme();
   const token = session?.token ?? null;
 
   const [trips, setTrips] = useState<Trip[]>([]);
@@ -23,7 +29,7 @@ export default function TripsScreen() {
   const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [start, setStart] = useState('');
   const [end, setEnd] = useState('');
-  const [flex, setFlex] = useState('0');
+  const [flex, setFlex] = useState(DEFAULT_FLEX_DAYS);
   const [note, setNote] = useState('');
   const [isPublic, setIsPublic] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -81,9 +87,28 @@ export default function TripsScreen() {
     }
   }
 
+  const defaultStart = toISODate(new Date());
+  const startDate = start || defaultStart;
+  const endDate = end || addDays(startDate, DEFAULT_TRIP_DAYS);
+
+  function pickStart(value: string) {
+    setStart(value);
+    // Drop an end date that the new start would put before it.
+    if (end && end < value) setEnd('');
+  }
+
   async function createTrip() {
-    if (!destination.trim() || !DATE_RE.test(start) || !DATE_RE.test(end)) {
-      Alert.alert('Missing info', 'Destination, start and end dates (YYYY-MM-DD) are required.');
+    const place = destination.trim();
+    if (!place) {
+      Alert.alert('Missing info', 'Destination is required.');
+      return;
+    }
+    if (!DATE_RE.test(startDate) || !DATE_RE.test(endDate)) {
+      Alert.alert('Invalid dates', 'Dates must be in YYYY-MM-DD format.');
+      return;
+    }
+    if (endDate < startDate) {
+      Alert.alert('Invalid dates', 'End date must be on or after the start date.');
       return;
     }
     setSaving(true);
@@ -91,19 +116,19 @@ export default function TripsScreen() {
       let c = coords;
       if (!c) {
         // Forward-geocode typed destinations so the weather lookup has coordinates.
-        const [hit] = await Location.geocodeAsync(destination).catch(() => []);
+        const [hit] = await Location.geocodeAsync(place).catch(() => []);
         if (hit) c = { lat: hit.latitude, lon: hit.longitude };
       }
-      const flexibleDays = Number(flex) || 0;
+      const flexibleDays = Number(flex.trim() || DEFAULT_FLEX_DAYS) || 0;
       await api<Trip>('/trips', {
         method: 'POST',
         token,
         body: {
-          destination: destination.trim(),
+          destination: place,
           lat: c?.lat,
           lon: c?.lon,
-          start_date: start,
-          end_date: end,
+          start_date: startDate,
+          end_date: endDate,
           flexible_days: flexibleDays,
           note,
           is_public: isPublic,
@@ -114,7 +139,7 @@ export default function TripsScreen() {
       setCoords(null);
       setStart('');
       setEnd('');
-      setFlex('0');
+      setFlex(DEFAULT_FLEX_DAYS);
       setNote('');
       setIsPublic(false);
       await load();
@@ -196,24 +221,31 @@ export default function TripsScreen() {
               disabled={locating}
             />
             <View style={styles.row}>
-              <Field
+              <DateField
                 label="Start"
                 value={start}
-                onChangeText={setStart}
-                placeholder="2026-12-20"
-                keyboardType="numbers-and-punctuation"
+                onChange={pickStart}
+                placeholder={defaultStart}
                 containerStyle={styles.flex1}
               />
-              <Field
+              <DateField
                 label="End"
                 value={end}
-                onChangeText={setEnd}
-                placeholder="2026-12-28"
-                keyboardType="numbers-and-punctuation"
+                onChange={setEnd}
+                placeholder={endDate}
+                minimumDate={startDate}
                 containerStyle={styles.flex1}
               />
             </View>
-            <Field label="Flexible ± days" value={flex} onChangeText={setFlex} keyboardType="number-pad" />
+            <Field
+              label="Flexible ± days"
+              value={flex}
+              onChangeText={setFlex}
+              onFocus={() => flex === DEFAULT_FLEX_DAYS && setFlex('')}
+              onBlur={() => !flex.trim() && setFlex(DEFAULT_FLEX_DAYS)}
+              style={flex === DEFAULT_FLEX_DAYS && { color: theme.textSecondary }}
+              keyboardType="number-pad"
+            />
             <Field label="Note" value={note} onChangeText={setNote} placeholder="Cheapest week wins" />
             <View style={styles.rowBetween}>
               <ThemedText type="small">Share to public feed</ThemedText>
