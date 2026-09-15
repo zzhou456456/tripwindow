@@ -1,5 +1,17 @@
 // Parse 'YYYY-MM-DD' at local noon so no timezone can push it onto a neighbouring day.
-const toDate = (d: string) => new Date(`${d.slice(0, 10)}T12:00:00`);
+export const toDate = (d: string) => new Date(`${d.slice(0, 10)}T12:00:00`);
+
+// Local calendar date as 'YYYY-MM-DD' (toISOString would shift to UTC).
+export function toISODate(d: Date) {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+export function addDays(d: string, days: number) {
+  const date = toDate(d);
+  date.setDate(date.getDate() + days);
+  return toISODate(date);
+}
 
 export function formatWindow(t: { start_date: string; end_date: string; flexible_days: number }) {
   const fmt = (d: string) => toDate(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
